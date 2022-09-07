@@ -1,35 +1,30 @@
 package main
 
 import (
+	"contact-chat/database"
+	"contact-chat/middlewares"
+	"contact-chat/profiles"
 	"fmt"
 	"net/http"
 
 	"github.com/labstack/echo/v4"
-	"github.com/labstack/echo/v4/middleware"
 )
-
-type Person struct {
-	Name string `json:"name" form:"name" query:"name"`
-	Age  int    `json:"age"`
-}
 
 func main() {
 	server := echo.New()
-	server.GET("/:name", getHandler)
-	server.POST("/", postHandler)
 
 	server.Static("/assets", "static")
 
 	// server.Use(middleware.Logger())
 
-	adminRouter := server.Group(("/admin"))
-	adminRouter.Use(middleware.BasicAuth(basicAuth))
+	server.POST("/login", middlewares.Login)
 
-	adminRouter.GET("/data", func(c echo.Context) error {
-		return c.JSON(http.StatusOK, "okee")
-	})
+	profileRouters := server.Group("/profile")
+	profileRouters.Use(middlewares.AuthorizationCheck)
 
-	connectedDb, err := connect()
+	profileRouters.GET("", profiles.GetProfile)
+
+	connectedDb, err := database.Connect()
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -45,13 +40,8 @@ func getHandler(c echo.Context) error {
 }
 
 func postHandler(c echo.Context) error {
-	person := new(Person)
-	// name := c.FormValue("name")
-	if err := c.Bind(person); err != nil {
-		return err
-	}
 
-	return c.JSON(http.StatusOK, person)
+	return c.JSON(http.StatusOK, "oke")
 }
 
 func basicAuth(username string, password string, c echo.Context) (bool, error) {

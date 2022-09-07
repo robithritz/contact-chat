@@ -1,4 +1,4 @@
-package main
+package database
 
 import (
 	"time"
@@ -7,6 +7,8 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
 )
+
+var DB *gorm.DB
 
 type Users struct {
 	ID          uint   `gorm:"primaryKey;autoIncrement:true"`
@@ -67,9 +69,10 @@ type TChatSents struct {
 	SentAt     time.Time `gorm:"default:CURRENT_TIMESTAMP"`
 }
 
-func connect() (bool, error) {
+func Connect() (bool, error) {
 	dsn := "host=localhost user=postgres password=123 dbname=karyawandb port=5432"
-	db, error := gorm.Open(postgres.Open(dsn), &gorm.Config{
+	var error error
+	DB, error = gorm.Open(postgres.Open(dsn), &gorm.Config{
 		NamingStrategy: schema.NamingStrategy{
 			SingularTable: true,
 		},
@@ -78,7 +81,7 @@ func connect() (bool, error) {
 		return false, error
 	}
 
-	db.AutoMigrate(&MRooms{}, &Users{}, &TChats{}, &TChatReaders{}, &TChatSents{})
+	DB.AutoMigrate(&MRooms{}, &Users{}, &TChats{}, &TChatReaders{}, &TChatSents{})
 
 	// robith := Karyawan{
 	// 	Name: "Robith Syaukil Islam",
