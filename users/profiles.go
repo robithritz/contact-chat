@@ -1,4 +1,4 @@
-package profiles
+package users
 
 import (
 	"contact-chat/database"
@@ -9,12 +9,8 @@ import (
 )
 
 type Profile struct {
-	Username    string    `json:"username"`
-	FirstName   string    `json:"firstName"`
-	LastName    string    `json:"lastName"`
-	ImageURL    string    `json:"imageURL"`
-	PhoneNumber string    `json:"phoneNumber"`
-	CreatedAt   time.Time `json:"createdAt"`
+	User
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 func GetProfile(c echo.Context) error {

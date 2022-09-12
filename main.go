@@ -3,9 +3,10 @@ package main
 import (
 	"contact-chat/database"
 	"contact-chat/middlewares"
-	"contact-chat/profiles"
+	"contact-chat/models/chats"
+	"contact-chat/models/rooms"
+	"contact-chat/users"
 	"fmt"
-	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
@@ -18,11 +19,21 @@ func main() {
 	// server.Use(middleware.Logger())
 
 	server.POST("/login", middlewares.Login)
+	server.POST("/register", users.Register)
 
 	profileRouters := server.Group("/profile")
 	profileRouters.Use(middlewares.AuthorizationCheck)
+	profileRouters.GET("", users.GetProfile)
 
-	profileRouters.GET("", profiles.GetProfile)
+	roomRouters := server.Group("/rooms")
+	roomRouters.Use(middlewares.AuthorizationCheck)
+	roomRouters.POST("", rooms.CreateRoom)
+
+	chatRouters := server.Group("/chats")
+	chatRouters.Use(middlewares.AuthorizationCheck)
+	chatRouters.POST("", chats.SaveMessage)
+	chatRouters.GET("/:messageId/received", chats.ReceivedMessage)
+	chatRouters.GET("/:messageId/read", chats.ReadMessage)
 
 	connectedDb, err := database.Connect()
 	if err != nil {
@@ -31,22 +42,4 @@ func main() {
 	fmt.Println(connectedDb)
 
 	server.Logger.Fatal(server.Start(":8888"))
-}
-
-func getHandler(c echo.Context) error {
-	name := c.Param("name")
-	age := c.QueryParam("age")
-	return c.String(http.StatusOK, "Hello, "+name+"! you are "+age+" years old\n")
-}
-
-func postHandler(c echo.Context) error {
-
-	return c.JSON(http.StatusOK, "oke")
-}
-
-func basicAuth(username string, password string, c echo.Context) (bool, error) {
-	if username == "admin" && password == "admin" {
-		return true, nil
-	}
-	return false, nil
 }

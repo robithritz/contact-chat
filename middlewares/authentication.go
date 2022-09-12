@@ -123,6 +123,7 @@ func AuthorizationCheck(next echo.HandlerFunc) echo.HandlerFunc {
 			}
 
 			c.Set("username", claims.Username)
+			c.Set("userId", profile.ID)
 			return next(c)
 		}
 	}

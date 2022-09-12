@@ -1,6 +1,7 @@
 package database
 
 import (
+	"database/sql"
 	"time"
 
 	"gorm.io/driver/postgres"
@@ -25,17 +26,28 @@ type Users struct {
 
 type MRooms struct {
 	ID              uint   `gorm:"primaryKey;autoIncrement:true"`
-	RoomName        string `gorm:"type:varchar(100)"`
-	RoomType        string `gorm:"type:varchar(20)"`
-	RoomImageURL    string
+	RoomName        string `gorm:"type:varchar(100)" json:"roomName"`
+	RoomType        string `gorm:"type:varchar(20)" json:"roomType"`
+	RoomImageURL    string `json:"roomImageURL"`
 	RoomDescription string `gorm:"type:varchar(150)"`
 	CreatorID       uint
 	Users           Users     `gorm:"foreignKey:CreatorID"`
 	CreatedAt       time.Time `gorm:"default:CURRENT_TIMESTAMP"`
 	UpdatedAt       time.Time `gorm:"default:CURRENT_TIMESTAMP"`
-	UpdatedBy       uint
+	UpdatedBy       sql.NullInt32
 	Users2          Users          `gorm:"foreignKey:UpdatedBy"`
 	DeletedAt       gorm.DeletedAt `gorm:"index"`
+}
+
+type MRoomParticipants struct {
+	ID            uint           `gorm:"primaryKey;autoIncrement:true"`
+	RoomId        uint           ``
+	Room          MRooms         `gorm:"foreignKey:RoomId"`
+	ParticipantId uint           ``
+	Users         Users          `gorm:"foreignKey:ParticipantId"`
+	CreatedAt     time.Time      `gorm:"default:CURRENT_TIMESTAMP"`
+	UpdatedAt     time.Time      `gorm:"default:CURRENT_TIMESTAMP"`
+	DeletedAt     gorm.DeletedAt `gorm:"index"`
 }
 
 type TChats struct {
@@ -81,18 +93,6 @@ func Connect() (bool, error) {
 		return false, error
 	}
 
-	DB.AutoMigrate(&MRooms{}, &Users{}, &TChats{}, &TChatReaders{}, &TChatSents{})
-
-	// robith := Karyawan{
-	// 	Name: "Robith Syaukil Islam",
-	// }
-
-	// result := db.Create(&robith)
-
-	// if result.Error != nil {
-	// 	return false, result.Error
-	// }
-
+	DB.AutoMigrate(&MRooms{}, &Users{}, &TChats{}, &TChatReaders{}, &TChatSents{}, &MRoomParticipants{})
 	return true, nil
-
 }
