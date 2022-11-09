@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"time"
 
+	"github.com/google/uuid"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/schema"
@@ -51,12 +52,12 @@ type MRoomParticipants struct {
 }
 
 type TChats struct {
-	ID             uint   `gorm:"primaryKey;autoIncrement:true"`
-	RoomID         uint   `gorm:"index"`
-	Room           MRooms `gorm:"foreignKey:RoomID"`
-	SenderID       uint   `gorm:"index"`
-	Users          Users  `gorm:"foreignKey:SenderID"`
-	MessageType    string `gorm:"type:varchar(50);index"`
+	ID             uuid.UUID `gorm:"type:uuid;primaryKey"`
+	RoomID         uint      `gorm:"index"`
+	Room           MRooms    `gorm:"foreignKey:RoomID"`
+	SenderID       uint      `gorm:"index"`
+	Users          Users     `gorm:"foreignKey:SenderID"`
+	MessageType    string    `gorm:"type:varchar(50);index"`
 	MessageContent string
 	CreatedAt      time.Time      `gorm:"default:CURRENT_TIMESTAMP"`
 	UpdatedAt      time.Time      `gorm:"default:CURRENT_TIMESTAMP"`
@@ -65,8 +66,8 @@ type TChats struct {
 
 type TChatReaders struct {
 	ID           uint      `gorm:"primaryKey;autoIncrement:true"`
-	ChatID       uint      `gorm:"index"`
-	Chat         TChats    `gorm:"foreignKey:ChatID"`
+	MessageId    uuid.UUID `gorm:"type:uuid;index"`
+	Chat         TChats    `gorm:"foreignKey:MessageId"`
 	TargetID     uint      `gorm:"index"`
 	ReaderTarget Users     `gorm:"foreignKey:TargetID"`
 	ReadAt       time.Time `gorm:"default:CURRENT_TIMESTAMP"`
@@ -74,11 +75,21 @@ type TChatReaders struct {
 
 type TChatSents struct {
 	ID         uint      `gorm:"primaryKey;autoIncrement:true"`
-	ChatID     uint      `gorm:"index"`
-	Chat       TChats    `gorm:"foreignKey:ChatID"`
+	MessageId  uuid.UUID `gorm:"type:uuid;index"`
+	Chat       TChats    `gorm:"foreignKey:MessageId"`
 	TargetID   uint      `gorm:"index"`
 	SentTarget Users     `gorm:"foreignKey:TargetID"`
 	SentAt     time.Time `gorm:"default:CURRENT_TIMESTAMP"`
+}
+
+type LMQ struct {
+	ID          uint           `gorm:"primaryKey;autoIncrement:true"`
+	MQID        uuid.UUID      `gorm:"type:uuid"`
+	TargetTopic string         `gorm:"type:text"`
+	TargetID    uint           `gorm:"index"`
+	Payload     string         `gorm:"type:text"`
+	CreatedAt   time.Time      `gorm:"default:CURRENT_TIMESTAMP"`
+	DeletedAt   gorm.DeletedAt `gorm:"index"`
 }
 
 func Connect() (bool, error) {
@@ -93,6 +104,6 @@ func Connect() (bool, error) {
 		return false, error
 	}
 
-	DB.AutoMigrate(&MRooms{}, &Users{}, &TChats{}, &TChatReaders{}, &TChatSents{}, &MRoomParticipants{})
+	DB.AutoMigrate(&MRooms{}, &Users{}, &TChats{}, &TChatReaders{}, &TChatSents{}, &MRoomParticipants{}, &LMQ{})
 	return true, nil
 }

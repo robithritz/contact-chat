@@ -3,10 +3,12 @@ package main
 import (
 	"contact-chat/database"
 	"contact-chat/middlewares"
-	"contact-chat/models/chats"
 	"contact-chat/models/rooms"
+	"contact-chat/mqtt"
+	chatsRouter "contact-chat/routers/chats"
 	"contact-chat/users"
 	"fmt"
+	"net/http"
 
 	"github.com/labstack/echo/v4"
 )
@@ -31,15 +33,24 @@ func main() {
 
 	chatRouters := server.Group("/chats")
 	chatRouters.Use(middlewares.AuthorizationCheck)
-	chatRouters.POST("", chats.SaveMessage)
-	chatRouters.GET("/:messageId/received", chats.ReceivedMessage)
-	chatRouters.GET("/:messageId/read", chats.ReadMessage)
+	chatRouters.POST("", chatsRouter.SaveMessage)
+	chatRouters.GET("/:messageId/received", chatsRouter.ReceivedMessage)
+	chatRouters.GET("/:messageId/read", chatsRouter.ReadMessage)
+
+	server.GET("/testmqtt", func(c echo.Context) error {
+		mqtt.Publish("haha/test", "oke", 0)
+		return c.JSON(http.StatusOK, echo.Map{
+			"message": "oke",
+		})
+	})
 
 	connectedDb, err := database.Connect()
 	if err != nil {
 		fmt.Println(err)
 	}
 	fmt.Println(connectedDb)
+
+	mqtt.ConnectBroker()
 
 	server.Logger.Fatal(server.Start(":8888"))
 }

@@ -2,87 +2,63 @@ package chats
 
 import (
 	"contact-chat/database"
-	"fmt"
-	"net/http"
-	"strconv"
-
-	"github.com/labstack/echo/v4"
 )
 
-func SaveMessage(c echo.Context) error {
-	message := new(database.TChats)
-
-	if err := c.Bind(message); err != nil {
-		return echo.ErrBadRequest
-	}
-
-	senderId, err := strconv.Atoi(fmt.Sprintf("%v", c.Get("userId")))
-	if err != nil {
-		return echo.ErrBadRequest
-	}
-
-	message.SenderID = uint(senderId)
-
-	result := database.DB.Create(&message)
+func SaveMessage(data *database.TChats) error {
+	result := database.DB.Create(&data)
 	if result.Error != nil {
-		return echo.ErrBadGateway
+		return result.Error
 	}
 
-	return c.JSON(http.StatusCreated, echo.Map{
-		"message": "message created",
-	})
+	return nil
 }
 
-func ReceivedMessage(c echo.Context) error {
-	messageId, err := strconv.Atoi(c.Param("messageId"))
-	if err != nil {
-		return echo.ErrBadRequest
+func SaveMQLog(data *database.LMQ) error {
+	result := database.DB.Create(&data)
+	if result.Error != nil {
+		return result.Error
 	}
 
-	userId, err := strconv.Atoi(fmt.Sprintf("%v", c.Get("userId")))
-	if err != nil {
-		return echo.ErrBadRequest
+	return nil
+}
+
+func SaveMQLogBulk(data []database.LMQ) error {
+	result := database.DB.Create(&data)
+	if result.Error != nil {
+		return result.Error
 	}
 
+	return nil
+}
+
+func ReceivedMessage(data *database.TChatSents) error {
 	tChatSent := new(database.TChatSents)
-	recordExisted := database.DB.Where("chat_id = ? AND target_id = ?", messageId, userId).First(&tChatSent)
+	recordExisted := database.DB.Where("message_id = ? AND target_id = ?", data.MessageId, data.TargetID).First(&tChatSent)
 	if recordExisted.RowsAffected == 0 {
-		tChatSent.ChatID = uint(messageId)
-		tChatSent.TargetID = uint(userId)
+		tChatSent.MessageId = data.MessageId
+		tChatSent.TargetID = data.TargetID
+		tChatSent.SentAt = data.SentAt
 		result := database.DB.Create(&tChatSent)
 		if result.Error != nil {
-			return echo.ErrBadGateway
+			return result.Error
 		}
 	}
 
-	return c.JSON(http.StatusCreated, echo.Map{
-		"message": "status updated successfully",
-	})
+	return nil
 }
 
-func ReadMessage(c echo.Context) error {
-	messageId, err := strconv.Atoi(c.Param("messageId"))
-	if err != nil {
-		return echo.ErrBadRequest
-	}
-
-	userId, err := strconv.Atoi(fmt.Sprintf("%v", c.Get("userId")))
-	if err != nil {
-		return echo.ErrBadRequest
-	}
-
-	tChatReaders := new(database.TChatReaders)
-	recordExisted := database.DB.Where("chat_id = ? AND target_id = ?", messageId, userId).First(&tChatReaders)
+func ReadMessage(data *database.TChatReaders) error {
+	tChatRead := new(database.TChatReaders)
+	recordExisted := database.DB.Where("message_id = ? AND target_id = ?", data.MessageId, data.TargetID).First(&tChatRead)
 	if recordExisted.RowsAffected == 0 {
-		tChatReaders.ChatID = uint(messageId)
-		tChatReaders.TargetID = uint(userId)
-		result := database.DB.Create(&tChatReaders)
+		tChatRead.MessageId = data.MessageId
+		tChatRead.TargetID = data.TargetID
+		tChatRead.ReadAt = data.ReadAt
+		result := database.DB.Create(&tChatRead)
 		if result.Error != nil {
-			return echo.ErrBadGateway
+			return result.Error
 		}
 	}
 
-	return c.JSON(http.StatusCreated, echo.Map{
-		"message": "status updated successfully",
-	})
+	return nil
 }
